@@ -1,0 +1,38 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f docker-compose.yml
+    kompose.version: 1.16.0 (0c01309)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: dappbox-default-front
+  name: dappbox-default-front
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        io.kompose.service: dappbox-default-front
+    spec:
+      containers:
+      - image: ixxoblockchainregistry.azurecr.io/dappbox-default-front
+        name: dappbox-default-front
+        ports:
+        - containerPort: 8281
+        env:
+        imagePullSecrets:
+        - name: azure-registry
+        resources: {}
+        volumeMounts:
+        - mountPath: /root/.config/DappBox/shared
+          name: shared-dappbox-front
+      restartPolicy: Always
+      volumes:
+      - name: shared-dappbox-front
+        persistentVolumeClaim:
+          claimName: shared-dappbox-front
+status: {}

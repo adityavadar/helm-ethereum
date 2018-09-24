@@ -1,0 +1,90 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f docker-compose.yml
+    kompose.version: 1.16.0 (0c01309)
+  creationTimestamp: null
+  labels:
+   io.kompose.service: dappboxservice
+  name: dappboxservice
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        io.kompose.service: dappboxservice
+    spec:
+      containers:
+      - image: ixxoblockchainregistry.azurecr.io/dappbox
+        name: dappboxservice
+        ports:
+        - containerPort: 8384
+        - containerPort: 22000
+        - containerPort: 21027
+          protocol: UDP
+#      env:
+#      imagePullSecrets:
+#      - name: azure-registry
+#      - name: ETHER_KEY
+#        valueFrom:
+#          secretKeyRef:
+#            name: {{ template "ethereum.fullname" . }}-geth-account
+#            value: accountSecret
+#      - name: ETHER_IP
+#        valueFrom:
+#          secretKeyRef:
+#            name: {{ template "ethereum.fullname" . }}-ethstats
+#            key: WS_SECRET
+#      - name: import-geth-account
+#        image: {{ .Values.geth.image.repository }}:{{ .Values.geth.image.tag }}
+#        imagePullPolicy: {{ .Values.imagePullPolicy }}
+#        command: ["/bin/sh"]
+#        args:
+#        - "-c"
+#        - "geth account import --password /root/.ethereum/account/accountSecret /root/.ethereum/account/accountPrivateKey"
+        resources: {}
+        volumeMounts:
+        - mountPath: /root/.config/DappBox/shared
+          name: shared-dappbox
+        - mountPath: /root/.ethereum
+          name: data
+#        - mountPath: /root/.ethereum/
+#          name: ether
+#          readOnly: true
+        - mountPath: /root/geth/
+          name: ethereum-config
+          readOnly: false
+        - mountPath: /geth
+          name: data
+#        - mountPath: /root/.ethereum/account
+#          readOnly: true
+#          name: account
+      restartPolicy: Always
+      volumes:
+      - name: shared-dappbox
+        persistentVolumeClaim:
+          claimName: shared-dappbox
+#      - name: ether
+#        persistentVolumeClaim:
+#          claimName: ether
+      - name: data
+        emptyDir: {}
+      - name: config-volume
+        configMap:
+        name: ethereum-config
+      - name: account
+#        secret:
+#          secretName: {{ template "ethereum.fullname" . }}-geth-account
+#   {{- with .Values.nodeSelector }}
+#      nodeSelector:
+#{{ toYaml . | indent 8 }}
+#   {{- end }}
+status: {}
+initContainers:
+- name: init-wait-for-ethereum 
+  image: busybox
+  command: ['sh', '-c', 'until nslookup geth-tx; do echo waiting for geth-tx; sleep 2; done;']
